@@ -1,151 +1,84 @@
-﻿using System.Net.Sockets;
-using System.Net;
+﻿using System.Net;
+using System.Net.Sockets;
 using System.Text;
-using System.Xml;
-using System.Net.Security;
-using System.Runtime.CompilerServices;
+using TCP_Test;
+using TCP_Test.Scripts;
 
+// Main Entry Point
+var dankord = new Dankord();
+dankord.Run();
 
-
-// Variables -------------------------------------------
-string[] arguments = Environment.GetCommandLineArgs();
-// -----------------------------------------------------
-
-// Main
-
-LaunchType launchType;
-
-if (arguments == null)
+public class Dankord
 {
-	Console.WriteLine("Select program type: Server [s] or Client [c]");
-	launchType = SelectProcessType(Console.ReadKey().KeyChar.ToString());
-}
-else
-	launchType = SelectProcessType(args[0]);
+	public static DankordBase instance;
 
-try
-{
-	switch (launchType)
+	public LaunchType launchType;
+
+	private string[]? arguments;
+
+	private void GetRunSettings()
 	{
-		case LaunchType.Server:
-			RunServer();
-			break;
-		case LaunchType.Client:
-			RunClient();
-			break;
-		default:
-			Console.WriteLine("Indubitably incorrect");
-			break;
-	}
-}
-catch (Exception e)
-{
-	Console.WriteLine(e.Message);
-}
-
-string input;
-string[] inputArgs;
-
-do
-{
-	input = Console.ReadLine().Trim();
-	inputArgs = input.Split(" ");
-	switch (inputArgs[0])
-	{
-		case "run":
-			break;
-		case "send":
-
-			break;
-	}
-} while (inputArgs[0] != "exit");
-
-
-
-
-
-
-
-
-
-// Functions
-
-LaunchType SelectProcessType(string arg)
-{
-	return arg switch
-	{
-		"s" => LaunchType.Server,
-		"c" => LaunchType.Client,
-		_ => throw new ArgumentException("SPATNY ARGUMENT!!!!!!!!!!!!!!!!!!!!!! ZABIJ SE"),
-	};
-}
-
-async void RunServer()
-{
-	Console.WriteLine("Running as Server...");
-	var ipEndPoint = new IPEndPoint(IPAddress.Any, 25565);
-	TcpListener listener = new(ipEndPoint);
-
-	try
-	{
-		listener.Start();
-		Console.WriteLine("Listener started, awaiting connections...");
-		while (true)
+		arguments = Environment.GetCommandLineArgs();
+		Console.WriteLine(arguments[1]);
+		if (arguments == null)
 		{
-			using TcpClient handler = await listener.AcceptTcpClientAsync();
-			Console.WriteLine("Client requesting to connect...");
-			handler.ReceiveTimeout = 30000;
-			handler.SendTimeout = 30000;
-			Console.WriteLine("Accepting request...");
-			await using NetworkStream stream = handler.GetStream();
-			var message = $"📅 {DateTime.Now} 🕛";
-			var dateTimeBytes = Encoding.UTF8.GetBytes(message);
-			await stream.WriteAsync(dateTimeBytes);
-			Console.WriteLine("Message sent to client!");
-			Console.ReadLine();
+			Console.WriteLine("Select program type: Server [s] or Client [c]");
+			arguments[1] = Console.ReadKey().KeyChar.ToString();
+		}
+		else
+		{
+			Console.WriteLine($"Console argument parsed: {arguments[1]}");
 		}
 
-		//Console.WriteLine($"Danek: \"{message}\"");
-		// Sample output:
-		//     Sent message: "📅 8/22/2022 9:07:17 AM 🕛"
+		if (arguments[1] == "s")
+			launchType = LaunchType.Server;
+		else if (arguments[1] == "c")
+			launchType = LaunchType.Client;
+		else
+			throw new ArgumentException("The launch argument may only be 's' or 'c'.");
 	}
-	finally
+
+	public void Run()
 	{
-		listener.Stop();
-		Console.WriteLine("Client disconnected.");
+		GetRunSettings();
+
+		string? input;
+		string[]? inputArgs;
+
+		if (launchType == LaunchType.Server)
+			instance = new DankordServer(
+					Name: "Dankuv super server",
+					IP_Address: IPAddress.Any,
+					Port: 25565
+				);
+
+		else if (launchType == LaunchType.Client)
+			instance = new DankordClient(
+					Name: "Danek",
+					IP_Address: IPAddress.Parse("127.0.0.1"),
+					Port: 25565
+				);
+
+		instance.Run();
+
+		do
+		{
+			input = Console.ReadLine().Trim();
+			inputArgs = input.Split(" ");
+			switch (inputArgs[0])
+			{
+				case "run":
+
+					break;
+
+				case "send":
+
+					break;
+
+				default:
+					Console.WriteLine($"{inputArgs[0]} is not a valid command.");
+					break;
+			}
+		} while (inputArgs[0] != "exit");
 	}
-}
-
-async void RunClient()
-{
-	Console.WriteLine("Running as Client...");
-	var ipAddress = IPAddress.Parse("185.82.239.12");
-	var localAdress = IPAddress.Parse("127.0.0.1");
-	var ipEndPoint = new IPEndPoint(localAdress, 25565);
-
-	Console.WriteLine("Creating new Client...");
-	using TcpClient client = new();
-	client.ReceiveTimeout = 30000;
-	client.SendTimeout = 30000;
-	Console.WriteLine("Awaiting server...");
-	await client.ConnectAsync(ipEndPoint);
-
-	while (true)
-	{
-		Console.WriteLine("Receiving message from server...");
-		await using NetworkStream stream = client.GetStream();
-
-		var buffer = new byte[1_024];
-		int received = await stream.ReadAsync(buffer);
-		string message = Encoding.UTF8.GetString(buffer);
-		Console.WriteLine(message);
-	}
-	client.Close();
-	Console.WriteLine("Disconnected from server.");
-}
-
-enum LaunchType
-{
-	Server,
-	Client
 }

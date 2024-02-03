@@ -1,8 +1,8 @@
 {
-  "profiles": {
-    "TCP_Test": {
-      "commandName": "Project",
-      "commandLineArgs": "s"
-    }
-  }
+	"profiles": {
+		"TCP_Test": {
+			"commandName": "Project",
+			"commandLineArgs": "s"
+		}
+	}
 }
